@@ -6,5 +6,5 @@ aufgrund der Corona-Pandemie findet die Veranstaltung "Advanced Programming" von
 
 ## Inhalte
 Datum | Thema
---- | --- | ---
+--- | ---
 25.05.2020 | Grundlagen, LLVM, Lexer
