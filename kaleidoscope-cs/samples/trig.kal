@@ -1,0 +1,8 @@
+# Reference three functions from libm.
+dec sin(x)
+dec cos(x)
+dec pow(base, exp)
+
+# Demonstrate the Pythagorean trigonometric identity.
+def run(x)
+	pow(sin(x), 2) + pow(cos(x), 2)

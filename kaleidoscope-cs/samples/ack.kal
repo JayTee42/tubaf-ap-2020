@@ -1,0 +1,11 @@
+# Compute Ackermann's function for two parameters a and b.
+def ack(a, b)
+	if a == 0 then
+		b + 1
+	else if b == 0 then
+		ack(a - 1, 1)
+	else
+		ack(a - 1, ack(a, b - 1))
+
+def run(a, b)
+	ack(a, b)
