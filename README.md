@@ -8,3 +8,5 @@ aufgrund der Corona-Pandemie findet die Veranstaltung "Advanced Programming" von
 Datum | Thema
 --- | ---
 25.05.2020 | Grundlagen, LLVM, Lexer
+01.06.2020 | Pfingstmontag -> keine Veranstaltung!
+08.06.2020 | Parser, AST
