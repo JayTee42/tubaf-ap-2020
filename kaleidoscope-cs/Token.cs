@@ -47,7 +47,7 @@ namespace Kaleidoscope
 	}
 
 	// A token as tagged union - hello Swift and Rust :'(
-	public struct Token
+	public class Token
 	{
 		// The type of the token
 		public TokenType Type { get; private set; }
