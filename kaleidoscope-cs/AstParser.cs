@@ -64,8 +64,55 @@ namespace Kaleidoscope.Ast
 		// Parse a generic expression (= a primary expression + (op + primary expression)*).
 		private Expression ParseExpression()
 		{
+			// Parse the primary expression on the left side.
+			// Then try to extend it with a binary operator RHS.
+			var primaryExpr = ParsePrimaryExpression();
+			return ExtendPrimaryExpression(primaryExpr, 0);
+		}
+
+		// Parse a primary expression (literal, bracket expr, identifier or conditional expr).
+		private Expression ParsePrimaryExpression()
+		{
+			// Dispatch to the correct parser.
+			switch (this._token.Type)
+			{
+				case TokenType.Number: return ParseLiteralExpression();
+				case TokenType.Bracket when (this._token.Bracket == Bracket.RoundStart): return ParseBracketExpression();
+				case TokenType.Identifier: return ParseIdentifierExpression();
+				case TokenType.Keyword when (this._token.Keyword == Keyword.If): return ParseConditionalExpression();
+
+				default: throw new FormatException($"Expected primary expression, but got '{ this._token }'.");
+			}
+		}
+
+		// Parse a literal expression.
+		private Expression ParseLiteralExpression()
+		{
+			// TODO: return a LiteralExpression
+		}
+
+		// Parse a bracket expression.
+		private Expression ParseBracketExpression()
+		{
+			// TODO: eat '(', dispatch to ParseExpression(), then eat ')'.
+		}
+
+		// Parse an identifier expression (parameter or function call).
+		private Expression ParseIdentifierExpression()
+		{
+			// TODO: eat an identifier, then perform lookahead: parameter or call?
+		}
+
+		// Parse a conditional expression.
+		private Expression ParseConditionalExpression()
+		{
+			// TODO: eat 'if', parse the condition, eat 'then', parse the positive expression, eat 'else', parse the negative expression.
+		}
+
+		private Expression ExtendPrimaryExpression(Expression lhs, int min_precedence)
+		{
 			// TODO
-			return new LiteralExpression(42);
+			return lhs;
 		}
 
 		// Parse a function prototype.
