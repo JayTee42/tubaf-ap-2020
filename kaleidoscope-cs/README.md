@@ -143,7 +143,7 @@ This will output an optimized ARM assembly file at `/home/jaytee/my_awesome_proj
 
 ## The `exe` stage
 
-To generate a fully-fledged executable file, we have to define an entry point. The classical `int main(int argc, char** argv)` is obviously not compatible to Kaleidoscope because of the variable types. To provide a comfortable way for actually _running_ the self-defined Kaleidoscope programs, we take the following steps on the `exe` stage:
+To generate a fully-fledged executable file, we have to define an entry point. The classical `int main(int argc, char** argv)` is obviously not compatible to Kaleidoscope because of the parameter types. To provide a comfortable way for actually _running_ the self-defined Kaleidoscope programs, we take the following steps on the `exe` stage:
 
  - First, ensure that the Kaleidoscope program contains a function named `run`. It may specify an arbitrary number of parameters.
  - Generate a small shim in C that contains a `main` function as entry point, forward-declares `run`, parses the command line parameters to double and passes them to Kaleidoscope.
