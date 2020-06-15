@@ -144,6 +144,22 @@ namespace Kaleidoscope
             }
         }
 
+        private static void ParseToOutputFile(Parser parser, string fileName, string outputPath)
+        {
+            // Create a stream writer around the output path.
+            using (var streamWriter = new StreamWriter(Path.Combine(outputPath, fileName + ".ast")))
+            {
+                // Read toplevel elements from the lexer until we hit the end of the file.
+                TopLevelElement element;
+
+                while ((element = parser.Parse()) != null)
+                {
+                    element.Print(streamWriter);
+                    streamWriter.WriteLine();
+                }
+            }
+        }
+
 		static void Main(string[] args)
 		{
             try
@@ -173,6 +189,16 @@ namespace Kaleidoscope
                     if (stage == Stage.Lexer)
                     {
                         Compiler.LexToOutputFile(lexer, fileName, outputPath);
+                        return;
+                    }
+
+                    // Wrap the lexer into a parser.
+                    var parser = new Parser(lexer);
+
+                    // If we only want the parser stage, parse into the output file.
+                    if (stage == Stage.Parser)
+                    {
+                        Compiler.ParseToOutputFile(parser, fileName, outputPath);
                         return;
                     }
 

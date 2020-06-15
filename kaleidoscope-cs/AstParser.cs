@@ -145,19 +145,21 @@ namespace Kaleidoscope.Ast
 
 			EatToken();
 
-			// Start a list of parameter expressions.
+			// Start a list of parameters.
 			var parameters = new List<Expression>();
 
 			// Check if this is the "no parameter" case as in "func()".
-			if (this._token.Type != TokenType.Bracket)
+			// *Important*: This condition intentionally differs from `ParseFunctionPrototype()`!
+			// The first parameter expression is allowed to start with '('.
+			if ((this._token.Type != TokenType.Bracket) || (this._token.Bracket != Bracket.RoundEnd))
 			{
 				while (true)
 				{
-					// Parse the current parameter as expression.
+					// Parse the current parameter.
 					parameters.Add(ParseExpression());
 
-					// If we now encounter a bracket, we are done.
-					if (this._token.Type == TokenType.Bracket)
+					// If we now have a closing bracket, we are done.
+					if ((this._token.Type == TokenType.Bracket) && (this._token.Bracket == Bracket.RoundEnd))
 					{
 						break;
 					}
@@ -172,12 +174,7 @@ namespace Kaleidoscope.Ast
 				}
 			}
 
-			// Validate and eat the closing bracket.
-			if (this._token.Bracket != Bracket.RoundEnd)
-			{
-				throw new FormatException($"Expected ')' in function call, but got '{ this._token }'.");
-			}
-
+			// Eat the bracket that has terminated the list.
 			EatToken();
 
 			return new CallExpression(name, parameters);
