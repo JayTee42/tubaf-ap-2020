@@ -9,5 +9,6 @@ Datum | Thema
 --- | ---
 25.05.2020 | Grundlagen, LLVM, Lexer ([Aufnahme](https://teach.informatik.tu-freiberg.de/playback/presentation/2.0/playback.html?meetingId=608b549408bc323232dd24f2f05796d74688c2fb-1590402500574))
 01.06.2020 | **Pfingstmontag -> keine Veranstaltung!**
-08.06.2020 | (I) Parser, AST ([Aufnahme](https://teach.informatik.tu-freiberg.de/playback/presentation/2.0/playback.html?meetingId=608b549408bc323232dd24f2f05796d74688c2fb-1591616814131))
-15.06.2020 | (II) Parser, AST, Visitor-Pattern (Aufnahme)
+08.06.2020 | Parser, AST ([Aufnahme](https://teach.informatik.tu-freiberg.de/playback/presentation/2.0/playback.html?meetingId=608b549408bc323232dd24f2f05796d74688c2fb-1591616814131))
+15.06.2020 | Operatorrangfolge, Visitor-Pattern (Aufnahme)
+22.06.2020 | Codegenerierung (Aufnahme)
