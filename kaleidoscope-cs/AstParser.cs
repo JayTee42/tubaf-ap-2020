@@ -222,9 +222,39 @@ namespace Kaleidoscope.Ast
 			return new ConditionalExpression(condition, thenExpression, elseExpression);
 		}
 
+		// Extend a primary expression that is followed by a binary operator.
 		private Expression ExtendPrimaryExpression(Expression lhs, int min_precedence)
 		{
-			// TODO
+			// Tail recursion resolved: Loop while the next token is an operator.
+			while (this._token.Type == TokenType.Operator)
+			{
+				// Get the operator.
+				var op = this._token.Operator;
+				var precedence = Parser.GetOperatorPrecedence(op);
+
+				// If the new precedence is below our minimum precedence,
+				// we perform a cut and return the accumulated expression.
+				if (precedence < min_precedence)
+				{
+					break;
+				}
+
+				// Eat it and parse the new RHS.
+				EatToken();
+				var rhs = ParsePrimaryExpression();
+
+				// Now perform a look-ahead and check the token after RHS.
+				// If it is also an operator that is stronger than our current one, extend our new
+				// RHS to the right recursively.
+				if ((this._token.Type == TokenType.Operator) && (Parser.GetOperatorPrecedence(this._token.Operator) > precedence))
+				{
+					rhs = ExtendPrimaryExpression(rhs, precedence + 1);
+				}
+
+				// Merge LHS and RHS into a binary operator expression and make it the new LHS.
+				lhs = new BinaryOperatorExpression(lhs, op, rhs);
+			}
+
 			return lhs;
 		}
 
