@@ -7,13 +7,28 @@ namespace Kaleidoscope
 	namespace Ast
 	{
 		// A basic interface that is implemented by every AST element
-		public interface Element { }
+		public interface Element
+		{
+			void Accept(Visitor visitor);
+		}
 
 		// A basic interface that is implemented by those AST elements that are expressions
 		public interface Expression: Element { }
 
 		// A basic interface that is implemented by those AST elements that are top-level
 		public interface TopLevelElement: Element { }
+
+		public interface Visitor
+		{
+			void VisitLiteralExpression(LiteralExpression expr);
+			void VisitParameterExpression(ParameterExpression expr);
+			void VisitBinaryOperatorExpression(BinaryOperatorExpression expr);
+			void VisitCallExpression(CallExpression expr);
+			void VisitConditionalExpression(ConditionalExpression expr);
+			void VisitFunctionPrototype(FunctionPrototype prototype);
+			void VisitFunctionDeclaration(FunctionDeclaration declaration);
+			void VisitFunctionDefinition(FunctionDefinition definition);
+		}
 
 		public class LiteralExpression: Expression
 		{
@@ -23,6 +38,11 @@ namespace Kaleidoscope
 			internal LiteralExpression(double value)
 			{
 				this.Value = value;
+			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitLiteralExpression(this);
 			}
 		}
 
@@ -34,6 +54,11 @@ namespace Kaleidoscope
 			internal ParameterExpression(string name)
 			{
 				this.Name = name;
+			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitParameterExpression(this);
 			}
 		}
 
@@ -54,6 +79,11 @@ namespace Kaleidoscope
 				this.Operator = op;
 				this.Right = rhs;
 			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitBinaryOperatorExpression(this);
+			}
 		}
 
 		public class CallExpression: Expression
@@ -68,6 +98,11 @@ namespace Kaleidoscope
 			{
 				this.Name = name;
 				this.Parameters = parameters;
+			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitCallExpression(this);
 			}
 		}
 
@@ -87,6 +122,11 @@ namespace Kaleidoscope
 				this.Condition = condition;
 				this.Then = thenExpr;
 				this.Else = elseExpr;
+			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitConditionalExpression(this);
 			}
 		}
 
@@ -109,6 +149,11 @@ namespace Kaleidoscope
 					throw new FormatException("Parameter names must be unique.");
 				}
 			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitFunctionPrototype(this);
+			}
 		}
 
 		public class FunctionDeclaration: TopLevelElement
@@ -119,6 +164,11 @@ namespace Kaleidoscope
 			internal FunctionDeclaration(FunctionPrototype prototype)
 			{
 				this.Prototype = prototype;
+			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitFunctionDeclaration(this);
 			}
 		}
 
@@ -134,6 +184,11 @@ namespace Kaleidoscope
 			{
 				this.Prototype = prototype;
 				this.Body = body;
+			}
+
+			public void Accept(Visitor visitor)
+			{
+				visitor.VisitFunctionDefinition(this);
 			}
 		}
 	}
