@@ -88,25 +88,138 @@ namespace Kaleidoscope.Ast
 		// Parse a literal expression.
 		private Expression ParseLiteralExpression()
 		{
-			// TODO: return a LiteralExpression
+			// Validate token type:
+			if (this._token.Type != TokenType.Number)
+			{
+				throw new FormatException($"Expected number, but got '{ this._token }'.");
+			}
+
+			var expr = new LiteralExpression(this._token.Number);
+			EatToken();
+
+			return expr;
 		}
 
 		// Parse a bracket expression.
 		private Expression ParseBracketExpression()
 		{
-			// TODO: eat '(', dispatch to ParseExpression(), then eat ')'.
+			// Validate bracket type:
+			if ((this._token.Type != TokenType.Bracket) || (this._token.Bracket != Bracket.RoundStart))
+			{
+				throw new FormatException($"Expected '(', but got '{ this._token }'.");
+			}
+
+			EatToken();
+
+			// Parse the inner expression.
+			var expr = ParseExpression();
+
+			// Parse the closing bracket.
+			if ((this._token.Type != TokenType.Bracket) || (this._token.Bracket != Bracket.RoundEnd))
+			{
+				throw new FormatException($"Expected ')', but got '{ this._token }'.");
+			}
+
+			EatToken();
+
+			return expr;
 		}
 
 		// Parse an identifier expression (parameter or function call).
 		private Expression ParseIdentifierExpression()
 		{
-			// TODO: eat an identifier, then perform lookahead: parameter or call?
+			// Validate token type:
+			if (this._token.Type != TokenType.Identifier)
+			{
+				throw new FormatException($"Expected identifier, but got '{ this._token }'.");
+			}
+
+			var name = this._token.Identifier;
+			EatToken();
+
+			// Perform a lookahead to distinguish between parameter / call expression:
+			if ((this._token.Type != TokenType.Bracket) || (this._token.Bracket != Bracket.RoundStart))
+			{
+				return new ParameterExpression(name);
+			}
+
+			EatToken();
+
+			// Start a list of parameter expressions.
+			var parameters = new List<Expression>();
+
+			// Check if this is the "no parameter" case as in "func()".
+			if (this._token.Type != TokenType.Bracket)
+			{
+				while (true)
+				{
+					// Parse the current parameter as expression.
+					parameters.Add(ParseExpression());
+
+					// If we now encounter a bracket, we are done.
+					if (this._token.Type == TokenType.Bracket)
+					{
+						break;
+					}
+
+					// Otherwise, this must be a parameter separator.
+					if (this._token.Type != TokenType.ParameterSeparator)
+					{
+						throw new FormatException($"Expected ')' or ',' in function call, but got '{ this._token }'.");
+					}
+
+					EatToken();
+				}
+			}
+
+			// Validate and eat the closing bracket.
+			if (this._token.Bracket != Bracket.RoundEnd)
+			{
+				throw new FormatException($"Expected ')' in function call, but got '{ this._token }'.");
+			}
+
+			EatToken();
+
+			return new CallExpression(name, parameters);
 		}
 
 		// Parse a conditional expression.
 		private Expression ParseConditionalExpression()
 		{
-			// TODO: eat 'if', parse the condition, eat 'then', parse the positive expression, eat 'else', parse the negative expression.
+			// Validate 'if' keyword:
+			if ((this._token.Type != TokenType.Keyword) || (this._token.Keyword != Keyword.If))
+			{
+				throw new FormatException($"Expected 'if' in conditional expression, but got '{ this._token }'.");
+			}
+
+			EatToken();
+
+			// Parse the condition.
+			var condition = ParseExpression();
+
+			// Validate 'then' keyword:
+			if ((this._token.Type != TokenType.Keyword) || (this._token.Keyword != Keyword.Then))
+			{
+				throw new FormatException($"Expected 'then' in conditional expression, but got '{ this._token }'.");
+			}
+
+			EatToken();
+
+			// Parse the "then" expression.
+			var thenExpression = ParseExpression();
+
+			// Validate 'else' keyword:
+			if ((this._token.Type != TokenType.Keyword) || (this._token.Keyword != Keyword.Else))
+			{
+				throw new FormatException($"Expected 'else' in conditional expression, but got '{ this._token }'.");
+			}
+
+			EatToken();
+
+			// Parse the "else" expression.
+			var elseExpression = ParseExpression();
+
+			return new ConditionalExpression(condition, thenExpression, elseExpression);
 		}
 
 		private Expression ExtendPrimaryExpression(Expression lhs, int min_precedence)
