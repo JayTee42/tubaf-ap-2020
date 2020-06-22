@@ -184,6 +184,7 @@ namespace Kaleidoscope.Ast
 
 	public static class PrinterElementExt
 	{
+		// Extension method: Call via "ast.Print(writer)".
 		public static void Print(this Element ast, TextWriter writer)
 		{
 			// Create a new printer that wraps the writer.

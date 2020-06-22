@@ -203,6 +203,23 @@ namespace Kaleidoscope
                         return;
                     }
 
+                    // Create a new module.
+                    using (var module = new Module(fileName, targetTriple))
+                    {
+                        // Parse everything into the module.
+                        parser.EmitAll(module);
+
+                        // What do we want to output?
+                        switch (stage)
+                        {
+                            case Stage.IntermediateRepresentation: module.PrintIRToFile(Path.Combine(outputPath, fileName + ".ll")); break;
+                            case Stage.Assembly: module.PrintAssemblyToFile(Path.Combine(outputPath, fileName + ".s")); break;
+                            case Stage.ObjectCode: module.PrintObjectCodeToFile(Path.Combine(outputPath, fileName + ".o")); break;
+
+                            default: throw new InvalidOperationException("Invalid stage.");
+                        }
+                    }
+
                     // TODO
                 }
             }
