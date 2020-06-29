@@ -59,17 +59,166 @@ namespace Kaleidoscope.Ast
 
 		public void VisitBinaryOperatorExpression(BinaryOperatorExpression expr)
 		{
-			// TODO
+			// Generate code for the left and right expression.
+			expr.Left.Accept(this);
+			var lhs = this.Result;
+
+			expr.Right.Accept(this);
+			var rhs = this.Result;
+
+			// Generate code for the operator.
+			switch (expr.Operator)
+			{
+				case Operator.Add:
+				{
+					this.Result = LLVM.BuildFAdd(this._module.Builder, lhs, rhs, "addtmp");
+					break;
+				}
+
+				case Operator.Subtract:
+				{
+					this.Result = LLVM.BuildFSub(this._module.Builder, lhs, rhs, "subtmp");
+					break;
+				}
+
+				case Operator.Multiply:
+				{
+					this.Result = LLVM.BuildFMul(this._module.Builder, lhs, rhs, "multmp");
+					break;
+				}
+
+				case Operator.Divide:
+				{
+					this.Result = LLVM.BuildFDiv(this._module.Builder, lhs, rhs, "divtmp");
+					break;
+				}
+
+                case Operator.Equal:
+                {
+                    var cmpResult = LLVM.BuildFCmp(this._module.Builder, LLVMRealPredicate.LLVMRealUEQ, lhs, rhs, "cmptmp_eq");
+                    this.Result = LLVM.BuildUIToFP(this._module.Builder, cmpResult, LLVM.DoubleType(), "booltmp");
+
+                    break;
+                }
+
+                case Operator.LowerThan:
+                {
+                    var cmpResult = LLVM.BuildFCmp(this._module.Builder, LLVMRealPredicate.LLVMRealULT, lhs, rhs, "cmptmp_lt");
+                    this.Result = LLVM.BuildUIToFP(this._module.Builder, cmpResult, LLVM.DoubleType(), "booltmp");
+
+                    break;
+                }
+
+                case Operator.LowerThanEqual:
+                {
+                    var cmpResult = LLVM.BuildFCmp(this._module.Builder, LLVMRealPredicate.LLVMRealULE, lhs, rhs, "cmptmp_lte");
+                    this.Result = LLVM.BuildUIToFP(this._module.Builder, cmpResult, LLVM.DoubleType(), "booltmp");
+
+                    break;
+                }
+
+                case Operator.GreaterThan:
+                {
+                    var cmpResult = LLVM.BuildFCmp(this._module.Builder, LLVMRealPredicate.LLVMRealUGT, lhs, rhs, "cmptmp_gt");
+                    this.Result = LLVM.BuildUIToFP(this._module.Builder, cmpResult, LLVM.DoubleType(), "booltmp");
+
+                    break;
+                }
+
+                case Operator.GreaterThanEqual:
+                {
+                    var cmpResult = LLVM.BuildFCmp(this._module.Builder, LLVMRealPredicate.LLVMRealUGE, lhs, rhs, "cmptmp_gte");
+                    this.Result = LLVM.BuildUIToFP(this._module.Builder, cmpResult, LLVM.DoubleType(), "booltmp");
+
+                    break;
+                }
+
+                default: throw new InvalidOperationException("Unhandled operator type.");
+			}
 		}
 
 		public void VisitCallExpression(CallExpression expr)
 		{
-			// TODO
+			// Ask the module symbol table for the function reference that is called.
+			var func = LLVM.GetNamedFunction(this._module.Mod, expr.Name);
+
+			if (func.Pointer == IntPtr.Zero)
+			{
+				throw new FormatException($"Undeclared function: '{ expr.Name }'");
+			}
+
+			// Validate the number of parameters.
+			var expectedParametersCount = LLVM.CountParams(func);
+
+			if (expectedParametersCount != expr.Parameters.Count)
+			{
+				throw new FormatException($"Invalid number of arguments for '{ expr.Name }(...)': Expected { expectedParametersCount }, got { expr.Parameters.Count }.");
+			}
+
+			// Generate code for the parameters.
+			var parameters = expr.Parameters.Select(p => { p.Accept(this); return this.Result; }).ToArray();
+
+			// Build a call instruction from that.
+			this.Result = LLVM.BuildCall(this._module.Builder, func, parameters, "calltmp");
 		}
 
 		public void VisitConditionalExpression(ConditionalExpression expr)
 		{
-			// TODO
+			// Obtain the current function from the builder.
+			var block = LLVM.GetInsertBlock(this._module.Builder);
+			var func = LLVM.GetBasicBlockParent(block);
+
+			// Generate code for the condition expression.
+			expr.Condition.Accept(this);
+			var condition = this.Result;
+
+			// Convert condition to a bool by comparing non-equal to 0.0.
+			// "ONE" means: "ordered, non-equal"
+			var zero = LLVM.ConstReal(LLVM.DoubleType(), 0);
+			var conditionResult = LLVM.BuildFCmp(this._module.Builder, LLVMRealPredicate.LLVMRealONE, condition, zero, "ifcond");
+
+			// Create blocks for "then", "else" and the merging step.
+			var thenBlock = LLVM.AppendBasicBlock(func, "then");
+			var elseBlock = LLVM.AppendBasicBlock(func, "else");
+			var mergeBlock = LLVM.AppendBasicBlock(func, "merge");
+
+			// Branch on the condition result.
+			LLVM.BuildCondBr(this._module.Builder, conditionResult, thenBlock, elseBlock);
+
+			// Fill the "then" block.
+			LLVM.PositionBuilderAtEnd(this._module.Builder, thenBlock);
+
+			expr.Then.Accept(this);
+			var thenV = this.Result;
+
+			// Branch to the merge block.
+			LLVM.BuildBr(this._module.Builder, mergeBlock);
+
+			// Update the "then" block reference after codegen.
+			// It might have change, e.g. by another condition.
+			thenBlock = LLVM.GetInsertBlock(this._module.Builder);
+
+			// Fill the "else" block.
+			LLVM.PositionBuilderAtEnd(this._module.Builder, elseBlock);
+
+			expr.Else.Accept(this);
+			var elseV = this.Result;
+
+			// Branch to the merge block.
+			LLVM.BuildBr(this._module.Builder, mergeBlock);
+
+			// Update the "else" block reference after codegen (see above).
+			elseBlock = LLVM.GetInsertBlock(this._module.Builder);
+
+			// Fill the "merge" block phi node.
+			LLVM.PositionBuilderAtEnd(this._module.Builder, mergeBlock);
+
+			var phi = LLVM.BuildPhi(this._module.Builder, LLVM.DoubleType(), "iftmp");
+
+			LLVM.AddIncoming(phi, new []{ thenV }, new []{ thenBlock }, 1);
+			LLVM.AddIncoming(phi, new []{ elseV }, new []{ elseBlock }, 1);
+
+			this.Result = phi;
 		}
 
 		public void VisitFunctionPrototype(FunctionPrototype prototype)
