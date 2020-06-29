@@ -1,2 +1,4 @@
+dec pow(base, exp)
+
 def ident(a)
-	a
+	pow(a, 2)

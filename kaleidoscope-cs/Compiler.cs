@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using LLVMSharp;
 using Kaleidoscope.Ast;
 
 namespace Kaleidoscope
@@ -161,6 +163,45 @@ namespace Kaleidoscope
             }
         }
 
+        private static void CreateMakefileProject(Module module, string fileName, string outputPath)
+        {
+            // Dump the module as object file to the given path.
+            module.PrintObjectCodeToFile(Path.Combine(outputPath, fileName + ".o"));
+
+            // Get the number of parameters of the run function.
+            var runFunc = LLVM.GetNamedFunction(module.Mod, "run");
+
+            if (runFunc.Pointer == IntPtr.Zero)
+            {
+                throw new FormatException("An executable needs a run function.");
+            }
+
+            var parameterCount = (int)LLVM.CountParams(runFunc);
+
+            // Create a C shim file that invokes the run function.
+            var parameterNames = string.Join(",", Enumerable.Range(0, parameterCount).Select(n => $"double p{ n }"));
+            var parameters = string.Join(",", Enumerable.Range(0, parameterCount).Select(n => $"p[{ n }]"));
+            var shim = $@"#include <stdio.h>" + "\n"
+                + $@"#include <stdlib.h>" + "\n"
+                + $@"#include <errno.h>" + "\n"
+                + $@"double run({ parameterNames });" + "\n"
+                + $@"double f(const char*a){{errno=0;char*e;double p=strtod(a,&e);if(errno||(a==e)){{printf(""Invalid argument: \""%s\""\n"",a);exit(EXIT_FAILURE);}}return p;}}" + "\n"
+                + $@"int main(int argc,char**argv){{if(argc!={ parameterCount + 1 }){{printf(""Invalid number of arguments ({ parameterCount } expected).\n"");exit(EXIT_FAILURE);}}" + "\n"
+                + $@"double p[{ parameterCount + 1 }];for(int i=0;i<{ parameterCount };i++)p[i]=f(argv[1+i]);printf(""Result: %lf\n"",run({ parameters }));}}";
+
+            // Write the shim to a C file.
+            var shimName = (fileName == "shim" ? "shim2" : "shim");
+            File.WriteAllText(Path.Combine(outputPath, shimName + ".c"), shim);
+
+            //Write a Makefile.
+            var makefile = $@"{ fileName }: { fileName }.o { shimName }.o" + "\n"
+                + "\t" + $@"gcc -o { fileName } { fileName }.o { shimName }.o -lm" + "\n\n"
+                + $@"{ shimName }.o: { shimName }.c" + "\n"
+                + "\t" + $@"gcc -O3 -c -o { shimName }.o { shimName }.c" + "\n";
+
+            File.WriteAllText(Path.Combine(outputPath, "Makefile"), makefile);
+        }
+
 		static void Main(string[] args)
 		{
             try
@@ -204,7 +245,7 @@ namespace Kaleidoscope
                     }
 
                     // Create a new module.
-                    using (var module = new Module(fileName, targetTriple))
+                    using (var module = new Module(fileName, targetTriple, useOptimizations))
                     {
                         // Parse everything into the module.
                         parser.EmitAll(module);
@@ -215,12 +256,11 @@ namespace Kaleidoscope
                             case Stage.IntermediateRepresentation: module.PrintIRToFile(Path.Combine(outputPath, fileName + ".ll")); break;
                             case Stage.Assembly: module.PrintAssemblyToFile(Path.Combine(outputPath, fileName + ".s")); break;
                             case Stage.ObjectCode: module.PrintObjectCodeToFile(Path.Combine(outputPath, fileName + ".o")); break;
+                            case Stage.MakefileProject: Compiler.CreateMakefileProject(module, fileName, outputPath); break;
 
                             default: throw new InvalidOperationException("Invalid stage.");
                         }
                     }
-
-                    // TODO
                 }
             }
             catch (Exception ex)

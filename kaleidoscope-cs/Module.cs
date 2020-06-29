@@ -14,6 +14,9 @@ public class Module: IDisposable
 	// The target machine
 	private LLVMTargetMachineRef _targetMachine;
 
+	// The function pass manager reference (or null if optimizations are disabled)
+	private LLVMPassManagerRef? _funcPassManager;
+
 	// Avoid double-dispose
 	private bool _isDisposed = false;
 
@@ -44,7 +47,7 @@ public class Module: IDisposable
 	// Create a new module with the given name.
 	// The passed target triple can be used for cross compilation.
 	// If it is null, the current platform will be used.
-	public Module(string name, string targetTriple)
+	public Module(string name, string targetTriple, bool useOptimizations)
 	{
 		// Create the module and the builder.
 		this.Mod = LLVM.ModuleCreateWithName(name);
@@ -71,6 +74,30 @@ public class Module: IDisposable
 		// Create a data layout from the machine and assign it to the module.
 		var dataLayout = LLVM.CreateTargetDataLayout(this._targetMachine);
 		LLVM.SetModuleDataLayout(this.Mod, dataLayout);
+
+		// Create the function pass manager for optimized runs.
+		if (useOptimizations)
+		{
+			var funcPassManager = LLVM.CreateFunctionPassManagerForModule(this.Mod);
+
+			// Add some nice optimization passes.
+			LLVM.AddBasicAliasAnalysisPass(funcPassManager);
+			LLVM.AddPromoteMemoryToRegisterPass(funcPassManager);
+			LLVM.AddInstructionCombiningPass(funcPassManager);
+			LLVM.AddReassociatePass(funcPassManager);
+			LLVM.AddGVNPass(funcPassManager);
+			LLVM.AddCFGSimplificationPass(funcPassManager);
+
+			// TODO: Add more!
+
+			// Initialize the manager and its passes and store it.
+			LLVM.InitializeFunctionPassManager(funcPassManager);
+			this._funcPassManager = funcPassManager;
+		}
+		else
+		{
+			this._funcPassManager = null;
+		}
 	}
 
 	// Ensure that our LLVM references are cleaned up properly.
@@ -89,12 +116,26 @@ public class Module: IDisposable
 
 		if (disposing)
 		{
+			// Dispose the function pass manager if present.
+			if (this._funcPassManager is LLVMPassManagerRef funcPassManager)
+			{
+				LLVM.DisposePassManager(funcPassManager);
+			}
+
 			// Dispose builder and module.
 			LLVM.DisposeBuilder(this.Builder);
 			LLVM.DisposeModule(this.Mod);
 		}
 
 		this._isDisposed = true;
+	}
+
+	public void Optimize(LLVMValueRef func)
+	{
+		if (this._funcPassManager is LLVMPassManagerRef funcPassManager)
+		{
+			LLVM.RunFunctionPassManager(funcPassManager, func);
+		}
 	}
 
 	public void PrintIRToFile(string filePath)

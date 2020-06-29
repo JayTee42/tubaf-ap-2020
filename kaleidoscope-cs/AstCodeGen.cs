@@ -309,6 +309,9 @@ namespace Kaleidoscope.Ast
 				throw new FormatException($"LLVM failed to verify the function '{ definition.Prototype.Name }'.");
 			}
 
+			// Ask LLVM to optimize the function (if enabled).
+			this._module.Optimize(func);
+
 			this.Result = func;
 		}
 	}
