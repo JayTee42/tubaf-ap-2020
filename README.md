@@ -12,4 +12,4 @@ Datum | Thema
 08.06.2020 | Parser, AST ([Aufnahme](https://teach.informatik.tu-freiberg.de/playback/presentation/2.0/playback.html?meetingId=608b549408bc323232dd24f2f05796d74688c2fb-1591616814131))
 15.06.2020 | Operatorrangfolge, Visitor-Pattern ([Aufnahme](https://teach.informatik.tu-freiberg.de/playback/presentation/2.0/playback.html?meetingId=608b549408bc323232dd24f2f05796d74688c2fb-1592222022324))
 22.06.2020 | LLVM-Module, Codegenerierung (I) ([Aufnahme](https://teach.informatik.tu-freiberg.de/playback/presentation/2.0/playback.html?meetingId=608b549408bc323232dd24f2f05796d74688c2fb-1592826929593))
-29.06.2020 | Codegenerierung (II), Binaries, Abschluss
+29.06.2020 | Codegenerierung (II), Binaries, Abschluss ([Aufnahme](https://teach.informatik.tu-freiberg.de/playback/presentation/2.0/playback.html?meetingId=608b549408bc323232dd24f2f05796d74688c2fb-1593431900247))
